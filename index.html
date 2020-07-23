@@ -1,0 +1,569 @@
+
+<!DOCTYPE html><html lang="no"><head><meta charset="utf-8" /><title>Timestable</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- <link href="https://fonts.googleapis.com/css?family=Open+Sans:300" rel="stylesheet"> -->
+<style type="text/css">
+@import url('range.css');
+@import url('radio.css');
+body {
+	background-color: #555;
+	margin: 0.5em;
+	max-width: 1400px;
+	font-size: 1.3em;
+	font-family: 'Open Sans', sans-serif;
+}
+main {
+	/*background-color: #fed;*/
+	display: inline-block;
+}
+aside{
+	display: inline-block;
+}
+fieldset{
+	position: absolute;
+	top: 1em;
+	right: 1em;
+	width: 600px;
+	display: inline-block !important;
+	margin: 5px;
+	padding: 1.5em;
+	border-radius:20px;
+	border: 0;
+	box-shadow: 3px 3px 5px 0px rgba(170,170,170,1);
+	color: #fff;
+	background-color: #333;
+}
+legend{
+	border: 0;
+	background-color: #777;
+	margin: 0.5em 1em;
+	padding: 4px 9px;
+	border:2px solid #888;
+	border-radius:15px;
+	box-shadow: 3px 3px 5px 0px rgba(170,170,170,1);
+}
+label {
+	display: flex;
+}
+input[type=range] {
+	width: 100%;
+	margin: 0.5em 0 1em 0;
+}
+button {
+	background-color: #86d;
+	color: #fff;
+	border-radius: 1em;
+	padding: 0.5em;
+	margin: 0.5em;
+	border: 0;
+	box-shadow: 5px 5px 5px #d5c;
+	outline: none;
+	width: 7em;
+}
+.mini {
+	width: 5em;
+	/*margin-left: 0.5em;*/
+}
+ul button{
+	width: 5em;
+	margin: 0.5em 1em 0.5em 0.5em;
+}
+button:hover {
+	background-color: #86d;
+	color: #fff;
+	box-shadow: 5px 5px 5px #666;
+}
+button:focus {
+	box-shadow: 5px 5px 5px #999;
+}
+ul{
+	padding-left: 0;
+	list-style-type: none;
+	font-size: 0.8em;
+}
+li {
+	/*display: inline-block;*/
+}
+.inline{display: inline-block}
+.first {width: 65%}
+/*.last {width: 33%}*/
+.scroll {
+	overflow: scroll;
+	height: 42vh;
+	position: relative;
+}
+.scrolltrack{
+	position: absolute;
+	right: 0;
+	width: 1em;
+	top: 0;
+	bottom: 0;
+	background-color: #555;
+	height: 100%;
+}
+.scroll::-webkit-scrollbar {width: 0 !important}
+.scroll {-ms-overflow-style: none}
+.space {
+	display: flex;
+    justify-content: space-between;
+}
+div{
+	/*display: inline-block;*/
+	/*background-color: pink*/
+}
+hr{border-color: #888}
+a {color: #e66}
+.cols {
+    margin-top: 0.5em;
+    column-count: 2;
+    column-gap: 0.5em;
+}
+@media(min-width: 1100px) and (max-width: 1300px) {
+	fieldset {width: 350px}
+	.mini {width: 3em}
+	.cols {
+	    column-count: 1;
+	    /*margin-top: 0.5em;*/
+	    /*column-gap: 0.5em;*/
+	}
+}
+@media(max-width: 1100px) {
+	fieldset{
+		position: inherit;
+		width: 85vh;
+	}
+}
+</style>
+</head>
+<body>
+	<main>
+		<canvas id="canvas">Your browser does not support canvas!</canvas>
+	</main>
+<aside>
+	<fieldset><legend>Settings</legend>
+		<div>
+<!-- 			<div class="top"> -->
+				Lines: <span id="span_steps"></span>
+				<label><input type="range" min="2" max="1000" step="1" id="input_steps" oninput="gui_change_steps(this.value,true)" onchange="gui_change_steps(this.value,true)"></label>
+				<div class="space">
+							
+					<div class="first inline">
+						Factor: <span id="span_times"></span>
+						<label><input type="range" min="0" max="200" step="1" id="input_times" oninput="gui_change_times(this.value,true)" onchange="gui_change_times(this.value,true)"></label>
+					</div>
+					<div class="last inline">
+<!-- 						<button class="inline mini" onclick="input_times.step = 1">1</button>
+						<button class="inline mini" onclick="input_times.step = 0.1">0.1</button> -->
+
+						<label class="chblb" for="one" class="inline">
+							<input type="radio" id="one" name="increment" oninput="input_times.step = 1" checked="true">
+							<span class="boxspan"><span>1</span></span>
+						</label>
+
+						<label class="chblb" for="oneTenth" class="inline">
+							<input type="radio" id="oneTenth" name="increment" oninput="input_times.step = 0.1">
+							<span class="boxspan"><span>0.1</span></span>
+						</label>
+
+					</div>
+				</div>
+				<hr />
+				<div class="space">
+					<div>
+						<button onclick="setSpin(180)">rotate 180</button>
+						<button onclick="setSpin(90)">rotate 90</button>
+						<button onclick="setSpin(60)">rotate 60</button>
+					</div>
+					<div class="last inline">
+						<label class="chblb" for="delay" class="inline">
+							<input type="radio" id="delay" name="delay" oninput="delay = true" checked="true">
+							<span class="boxspan"><span>delay</span></span>
+						</label>
+
+						<label class="chblb" for="instant" class="inline">
+							<input type="radio" id="instant" name="delay" oninput="delay = false">
+							<span class="boxspan"><span>instant</span></span>
+						</label>
+
+					</div>
+				</div>
+
+			<!-- </div> -->
+		</div>
+		<hr />
+		<div class="scroll">
+		<div class="scrolltrack"></div>
+			<h3>generate random relation</h3>
+			<ul class="cols">
+				<li><button onclick="makeRatio(2,-1)">(-1) 2:1</button>=<button onclick="makeTimes(2,false)">*2</button>cardiod</li>
+				<li><button onclick="makeRatio(2,-3)">(-3) 2:1</button>=<button onclick="makeRatio(3,-2)">(-2) 3:1</button>heart</li>
+				<li><button onclick="makeRatio(2,0)">2:1</button>shell</li>
+				<li><button onclick="makeRatio(3,0)">3:1</button>perspective</li>
+				<li><button onclick="makeRatio(4,0)">4:1</button>four rays</li>
+				<!-- <li><button onclick="makeRatio(5,0)">5:1</button>five rays</li> -->
+				<!-- <li><button onclick="makeRatio(6,0)">6:1</button>six rays</li> -->
+				<li><button onclick="makeRatio(7,0)">7:1</button>seven rays</li>
+				<!-- <li><button onclick="makeRatio(1,4)">(4)</button>bare 140:136 som er kul</li> -->
+				<li><button onclick="makeRatio(1,1)">(+1)</button>lines</li>
+				<li><button onclick="makeRatio(1,2,'even')">(+2) even</button>triangles</li>
+				<li><button onclick="makeRatio(1,3,'square')">(+3) %4</button>cross symmetry</li>
+				<li><button onclick="makeRatio(2,2)">(+2) 2:1</button>rectangles</li>
+				<li><button onclick="makeRatio(2,-4)">(-4) 2:1</button>wrapped nephroid</li>
+				<li><button onclick="makeRatio(2,-2)">(-2) 2:1</button>clean radiator</li>
+				<li><button onclick="makeRatio(2,1)">(+1) 2:1</button>stars</li>
+				<li><button onclick="makeRatio(3,3)">(+3) 3:1</button>lines and 60-diagonals</li>
+				<li><button onclick="makeRatio(4,4)">(+4) 4:1</button>right and 45-diagonals</li>
+				<li><button onclick="makeRatio(5,5)">(+5) 5:1</button>right and 18-diagonals</li>
+				<li><button onclick="makeRatio(6,6)">(+6) 6:1</button>rectangles and triangles</li>
+				<li><button onclick="makeTimes(3,false)">*3</button>nephroid</li>
+				<li><button onclick="makeTimes(4,false)">*4</button>3 petal</li>
+				<li><button onclick="makeTimes(5,false)">*5</button>4 petal</li>
+				<li><button onclick="makeTimes(6,false)">*6</button>5 petal</li>
+				<li><button onclick="makeTimes(7,false)">*7</button>6 petal</li>
+				<li><button onclick="makeTimes(8,true)">*8%</button>7 petal sym</li>
+				<li><button onclick="makeTimes(18,true)">*18%</button>17 petal sym</li>
+				<li><button onclick="makeTimes(18,true,'odd')">*18%</button>17 hole odd</li>
+				<li><button onclick="makeTimes(18,true,'even')">*18%</button>17 hole even</li>
+				<li><button onclick="makeTimes(161,true)">*161%</button>160 hole</li>
+				</ul>
+					
+				<br>pattern unknown<br>
+				<ul class="cols">
+				<li><button onclick="setValues(69,18)">heart</button></li>
+				<li><button onclick="setValues(61,13)">heart</button></li>
+				<li><button onclick="setValues(57,18)">a pattern</button>(+3) 3:1 !=</li>
+				<li><button onclick="setValues(114,18)">a pattern x2</button>(+6) 6:1</li>
+				<br>random<br>
+				<li><button onclick="setValues(167,111)">zig</button>=<button onclick="setValues(167,164)">zig</button></li>
+				<br>circle-hole<br>
+				<li><button onclick="setValues(1000,281)">deep hole</button></li>
+				<li><button onclick="setValues(200,161)">double hole</button>=<button onclick="setValues(200,41)">double hole</button></li>
+				<li><button onclick="setValues(280,161)">double hole</button>~<button onclick="setValues(266,39)">double hole</button></li>
+				<li><button onclick="setValues(555,200,true)">holes add</button></li>
+				174,117
+				102,16
+				336,85
+				228,49
+				210,46
+				144,35
+				306,62
+				138,34
+				186,42
+				150,36
+				216,47
+				174,40
+				180,41
+				156,49
+				156,81
+			</ul>
+			<hr />
+				<br>
+			<label class="chblb" for="type_timesTable">
+				<input type="radio" id="type_timesTable" name="drawstyle" oninput="addsum  = false;redraw()" checked="true">
+				<span class="boxspan"><span>timesTable</span></span>
+			</label>
+
+			<label class="chblb" for="type_addSum">
+				<input type="radio" id="type_addSum" name="drawstyle" oninput="addsum  = true;redraw()">
+				<span class="boxspan"><span>addSum</span></span>
+			</label>
+			<hr />
+				<p>Math made fun =)</p>
+				This is what happens if you align numbered dots in a circular pattern, and draw a line from every number to the product between the number and the factor. Some pretty amazing patterns for sure.<br>
+				<br>Code by: <a href="http://unitilio.com">unitilio.com</a>
+		</div>
+	</fieldset>
+</aside>
+<script>
+
+
+const thecanvas = document.getElementById('canvas')
+const ctx = thecanvas.getContext('2d')
+const canvas_size = window.innerHeight
+const size = canvas_size-30
+const c = size/2
+
+thecanvas.width=size
+thecanvas.height=size
+
+let steps
+let times
+let addsum = false
+let spin = 0
+let delay = true
+let finished = true
+
+let x_c = []
+let y_c = []
+
+let x_m
+let y_m
+
+let style = {
+	dot: '#86d',
+	dotSize: 6,
+	zoom: 2,
+	dotStroke: '#000',
+	line: '#fff',
+}
+
+canvas.addEventListener('mouseout', function() {instant()})
+canvas.addEventListener('click', function() {style.zoom = 1;instant()})
+canvas.addEventListener('mousemove', function(e) {
+
+	x_m = 0.5-(e.clientX/size)
+	y_m = 0.5-(e.clientY/size)
+	instant(style.zoom,x_m,y_m)
+})
+
+canvas.addEventListener('wheel', function(e) {
+	e.preventDefault()
+	// console.log('zoomish = ' + style.zoom)
+	// debounce(function(e) {
+		e.preventDefault()
+		let change = 0.8
+		if (e.deltaY > 0) {style.zoom*=change} else {style.zoom*=(1/change)}
+		instant(style.zoom,x_m,y_m)
+		console.log('zoom = ' + style.zoom)
+	// }, 500, true)
+})
+
+function zoom(x,y) {
+	
+}
+
+function debounce(func, wait, immediate) {
+	let timeout
+	return function() {
+		let context = this, args = arguments
+		let later = function() {
+			timeout = null
+			if (!immediate) func.apply(context, args)
+		}
+		let callNow = immediate && !timeout
+		clearTimeout(timeout)
+		timeout = setTimeout(later, wait)
+		if (callNow) func.apply(context, args)
+	}
+}
+
+function recalc(zoom, x,y) {
+	for (let i=0;i<=steps-1;i++) {
+		let deg = i*(360/steps)
+		let radian = (2*Math.PI/360)*((deg+spin)%360)
+		x_c[i] = c+(zoom*Math.sin(radian)*(c-15))+(x*size*zoom)
+		y_c[i] = c+(zoom*Math.cos(radian)*(c-15))+(y*size*zoom)
+	}
+	ctx.clearRect(0,0,size,size)
+}
+function redraw(zoom=1,x=0,y=0) {
+	if (finished) {
+		finished = false
+		// drawCircle(c,c,c-15,'#fed',1)
+		// drawCircle(c,c,10,'red',1)
+		// drawCircle(0,0,10,'red',1)
+		// drawCircle(size,size,10,'red',1)
+		recalc(zoom,x,y)
+		if (delay) {
+			let i = 0
+			let interval = setInterval(function() {
+				if (i < steps) {
+					let thisStep = Number(type(i)[0])
+					let nextStep = Number(type(i)[1])
+					drawLine(x_c[thisStep],y_c[thisStep],x_c[nextStep],y_c[nextStep])
+					i++
+				} else {
+					clearInterval(interval)
+					for (i=0;i<=steps-1;i++) {
+						ctx.strokeStyle = style.dotStroke
+						drawCircle(x_c[i],y_c[i],style.dotSize,style.dot,true)
+					}
+				}
+			}, 10)
+		} else {
+			instant(zoom, x, y)
+		}
+		finished = true
+	} else {}
+}
+
+function instant(zoom=1,x=0,y=0) {
+	recalc(zoom,x,y)
+	for (let i=0;i<=steps-1;i++) {
+		let thisStep = Number(type(i)[0])
+		let nextStep = Number(type(i)[1])
+		drawLine(x_c[thisStep],y_c[thisStep],x_c[nextStep],y_c[nextStep])
+	}
+	for (let i=0;i<=steps-1;i++) {
+		ctx.strokeStyle = style.dotStroke
+		drawCircle(x_c[i],y_c[i],style.dotSize,style.dot,true)
+	}
+}
+
+function type(i) {
+	if (addsum) {return [i,Math.floor((i+times)%steps)]}
+	return [i,Math.floor((i*times)%steps)]
+}
+
+function drawCircle(x,y,r,color,stroke) {
+	ctx.fillStyle = color
+	ctx.beginPath()
+	ctx.arc(x,y,r,0,Math.PI*2,true)
+	ctx.fill()
+	ctx.lineWidth = stroke
+	if (stroke != 0) {
+		ctx.stroke()
+	}
+	ctx.closePath()
+}
+
+function drawLine(x0,y0,x1,y1) {
+	ctx.beginPath()
+	ctx.moveTo(x0,y0)
+	ctx.lineTo(x1,y1)
+	ctx.strokeStyle = style.line
+	ctx.stroke()
+	ctx.closePath()
+}
+// evenOrOddSteps rewrite to modulo
+function makeRatio(ratio,delta,evenOrOddSteps) {
+	let seedSteps
+	let seedTimes
+	seedSteps = Math.floor(randn_bm(1, 1000, 3))
+	seedSteps = seedSteps + (ratio-((seedSteps-delta)%ratio))
+	seedTimes = (seedSteps-delta)/ratio
+	
+	if (evenOrOddSteps == 'even') {
+		if (seedSteps%2 == 1) {
+			if (ratio == 1) seedSteps ++;seedTimes++}
+	}
+	if (evenOrOddSteps == 'square') {
+		seedSteps = seedSteps + (4-(seedSteps%4))
+		seedTimes = seedSteps - 3
+	}
+	console.log(seedSteps,seedTimes)
+	gui_change_steps(seedSteps, false)
+	gui_change_times(seedTimes, true)
+}
+
+function makeTimes(time,symmetrical,evenOrOddSteps) {
+	let seedSteps =  Math.floor(randn_bm(1, 1000-time, 3))
+	if (symmetrical) {
+		let symmetri = time-1
+		seedSteps = seedSteps + (symmetri-(seedSteps%symmetri))
+		if (evenOrOddSteps == 'odd') {
+			if (isEven(seedSteps)) {
+				if (isEven(symmetri)) {console.log('imposssible request')} else {seedSteps = seedSteps + symmetri}
+			}
+		if (evenOrOddSteps == 'even') {
+			if (isOdd(seedSteps))
+				if (isOdd(symmetri)) {seedSteps = seedSteps + symmetri} else {console.log('impossible request')}
+			}
+		}
+	}
+	console.log(seedSteps,times)
+	gui_change_steps(seedSteps, false)
+	gui_change_times(time, true)
+}
+
+function isEven(n) {if (n%2 == 0) {return true} else return false}
+function isOdd(n) {return !isEven(n)}
+
+function increment(inc) {
+	gui_change_steps(Number(steps+inc),false)
+	gui_change_times(times+(Math.abs(inc)/inc),true)
+}
+
+function setSpin(newSpin) {
+	targetSpin = spin + newSpin
+	let animate = setInterval(function() {
+		spin = spin + 3
+		instant()
+		if (spin >= targetSpin) {clearInterval(animate)}
+	},5)
+}
+
+
+function randn_bm(min, max, skew) {
+    let u = 0, v = 0;
+    while(u === 0) u = Math.random(); //Converting [0,1) to (0,1)
+    while(v === 0) v = Math.random();
+    let num = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+    num = num / 10.0 + 0.5; // Translate to 0 -> 1
+    if (num > 1 || num < 0) num = randn_bm(min, max, skew); // resample between 0 and 1 if out of range
+    num = Math.pow(num, skew); // Skew
+    num *= max - min; // Stretch to fill range
+    num += min; // offset to min
+    return num;
+}
+
+function primeFactors(incoming) {
+	let factors = []
+	let n = incoming
+	let i = 2
+	while (n >= 2*i && n != i) {
+		if (n%i==0) {
+			factors.push(i)
+			n = n/i
+			i = 2
+		} else {i++}
+	}
+	factors.push(n)
+	return factors
+}
+
+// GUI
+function gui_change_steps(value,update){
+	steps = Number(value)
+	input_times.max = steps
+	if (times > steps) {gui_change_times(0,false)}
+	span_steps.innerHTML = value
+	input_steps.value = value
+	// setTimeout(function() {
+		let primes = primeFactors(steps)
+		span_steps.innerHTML = value + ' = (' + primes.join(' * ') + ')'
+	// }, 500)
+	// localStorage.setItem('steps', value)
+	if (update) {
+		redraw()
+	}
+}
+
+function gui_change_times(value,update){
+	times = Number(value)
+	span_times.innerHTML = value
+	input_times.value = value
+	// localStorage.setItem('times', value)
+	let primes = primeFactors(times)
+	span_times.innerHTML = value + ' = (' + primes.join(' * ') + ') Ratio: ' + (Math.floor(100*(steps/times))/100) + ':1'
+	if (update) {
+		redraw()
+	}
+}
+
+function gui_change_type(value){
+	if (value) {
+		addSum = true
+		type_addSum.checked = true
+	} else {
+		addSum = false
+		type_timesTable.checked = true
+	}
+}
+
+function setValues(steps,times,toggle=false) {
+	gui_change_steps(steps,false)
+	gui_change_times(times,false)
+	if (toggle) {
+		gui_change_type(true)
+	} else {
+		gui_change_type(false)
+	}
+	redraw()
+	console.log(steps,times,toggle)
+}
+
+setValues(156,112)
+</script>
+</body>
+</html>
