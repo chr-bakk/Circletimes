@@ -2,7 +2,8 @@
 <!-- mar 2020 v. 0.1 - First version -->
 <!-- nov 2020 v. 0.2 - Edit -->
 <!-- mar 2022 v. 0.3 - Edit -->
-<!-- jul 2024 v. 0.4 - Code fix -->
+<!-- jul 2024 v. 0.4 - Code fix  -->
+<!-- aug 2024 v. 0.5 - refactor  -->
 <!DOCTYPE html><html lang="no"><head><meta charset="utf-8" /><title>Timestable</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="apple-touch-icon" sizes="180x180" href="fav_circletimes/apple-touch-icon.png">
@@ -25,6 +26,10 @@
 	
 	--radioDot: #d5c;
 	--radioBox: #86d;
+
+	--inner: #f55;
+	--outer: #fff;
+	--track: #dd6;
 }
 body {
 	background-color: #555;
@@ -36,13 +41,13 @@ body {
 }
 canvas{
 	display: block;
-	position: absolute;
+/*	position: absolute;*/
 }
 div{
 	/*display: inline-block;*/
 	/*background-color: pink*/
 }
-fieldset{
+fieldset {
 	position: absolute;
 	top: 1em;
 	right: 1em;
@@ -191,11 +196,11 @@ a {color: #e66}
 	}
 }
 @media(max-width: 1100px) {
-	fieldset{
+	fieldset {
 		position: inherit;
-		width: 85vh;
+		width: auto;
 	}
-	.scroll{
+	.scroll {
 		height: auto;
 	}
 }
@@ -213,8 +218,8 @@ a {color: #e66}
 				</div>
 				<div class="factors" id="html_steps_factors"></div>
 				<label><input type="range" min="2" max="1000" step="1" id="input_steps"
-					oninput="delay?gui_change_steps(this.value,false):gui_change_steps(this.value,true)"
-					onchange="delay?gui_change_steps(this.value,true):gui_change_steps(this.value,false)"></label>
+					oninput="delay?Main.gui.setSteps(this.value,false):Main.gui.setSteps(this.value,true)"
+					onchange="delay?Main.gui.setSteps(this.value,true):Main.gui.setSteps(this.value,false)"></label>
 			</div>
 			<hr>
 
@@ -226,8 +231,8 @@ a {color: #e66}
 				</div>
 				<div class="factors" id="html_times_factors"></div>
 				<label><input type="range" min="2" max="1000" step="1" id="input_times"
-					oninput="delay?gui_change_times(this.value,false):gui_change_times(this.value,true)"
-					onchange="delay?gui_change_times(this.value,true):gui_change_times(this.value,false)"></label>
+					oninput="delay?Main.gui.setFactor(this.value,false):Main.gui.setFactor(this.value,true)"
+					onchange="delay?Main.gui.setFactor(this.value,true):Main.gui.setFactor(this.value,false)"></label>
 			</div>
 			<hr>
 			<div class="space">
@@ -241,9 +246,9 @@ a {color: #e66}
 				</div>
 				<div id="ratio"></div>
 				<div class="space spins">
-					<button onclick="setSpin(Math.PI)">rotate 180</button>
-					<button onclick="setSpin(Math.PI/2)">rotate 90</button>
-					<button onclick="setSpin(Math.PI/3)">rotate 60</button>
+					<button onclick="Main.setSpin(Math.PI)">rotate 180</button>
+					<button onclick="Main.setSpin(Math.PI/2)">rotate 90</button>
+					<button onclick="Main.setSpin(Math.PI/3)">rotate 60</button>
 				</div>
 			</div>
 <!-- 					<div class="last inline">
@@ -339,9 +344,9 @@ a {color: #e66}
 				<li><button onclick="setValues(717,90)">717,90</button>pretty flower</li>	
 			</ul>
 			<hr>
-			<div class="radio"><input id="type_timesTable" type="radio" name="drawstyle" oninput="addSum  = false;redraw()" checked="true">
+			<div class="radio"><input id="type_timesTable" type="radio" name="drawstyle" oninput="addSum  = false;Main.redraw()" checked="true">
 			<label for="type_timesTable" class="radio">timesTable</label></div>
-			<div class="radio"><input id="type_addSum" type="radio" name="drawstyle" oninput="addSum  = true;redraw()">
+			<div class="radio"><input id="type_addSum" type="radio" name="drawstyle" oninput="addSum  = true;Main.redraw()">
 			<label for="type_addSum" class="radio">addSum</label></div>
 			<hr>
 			<p>Fun with numbers =)</p>
@@ -371,6 +376,10 @@ let y_c = []
 let x_m
 let y_m
 
+
+let i
+let lastIntervalId
+
 let style = {
 	dot: '#86d',
 	dotSize: 6,
@@ -379,70 +388,232 @@ let style = {
 	line: '#fff',
 }
 
-function recalc(zoom, x,y) {
-	for (let i=0;i<steps;i++) {
-		const radian = 2*Math.PI/steps*i+spin
-		x_c[i] = c+(zoom*Math.sin(radian)*(c-15))+(x*size*zoom)
-		y_c[i] = c+(zoom*Math.cos(radian)*(c-15))+(y*size*zoom)
+const Main = {
+	recalc(zoom, x,y) {
+		for (let i=0;i<steps;i++) {
+			const radian = 2*Math.PI/steps*i+spin
+			x_c[i] = c+(zoom*Math.sin(radian)*(c-15))+(x*size*zoom)
+			y_c[i] = c+(zoom*Math.cos(radian)*(c-15))+(y*size*zoom)
+		}
+		ctx.clearRect(0,0,size,size)
+	},
+	redraw(zoom=1,x=0,y=0) {
+		if (delay) {
+			this.recalc(zoom,x,y)
+				i = steps-1
+				let id = setInterval(() => {
+					lastIntervalId = id
+					let thisStep = Number(this.type(i)[0])
+					let nextStep = Number(this.type(i)[1])
+					Main.draw.line(x_c[thisStep],y_c[thisStep],x_c[nextStep],y_c[nextStep])
+					i--
+					if (i < 0) {
+						clearInterval(id)
+						this.drawCircles()
+					}
+				}, 10)
+		} else {
+			this.instant(zoom, x, y)
+		}
+	},
+	instant(zoom=1,x=0,y=0) {
+		clearInterval(lastIntervalId)
+		this.recalc(zoom,x,y)
+		for (let i=0;i<steps;i++) {
+			let thisStep = Number(this.type(i)[0])
+			let nextStep = Number(this.type(i)[1])
+			Main.draw.line(x_c[thisStep],y_c[thisStep],x_c[nextStep],y_c[nextStep])
+		}
+		this.drawCircles()
+	},
+	drawCircles() {
+		for (let i=0;i<steps;i++) {
+			ctx.strokeStyle = style.dotStroke
+			Main.draw.circle(x_c[i],y_c[i],style.dotSize,style.dot,true)
+		}
+	},
+	type(i) {
+		if (addSum) {return [i,Math.floor((i+times)%steps)%steps]}
+		return [i,Math.floor((i*times)%steps)]
+	},
+	setSpin(newSpin) {
+		const targetSpin = spin + newSpin
+		let animate = setInterval(() => {
+			spin = spin + Math.PI /240
+			this.instant()
+			if (spin > targetSpin) {
+				clearInterval(animate)
+				spin = targetSpin
+			}
+		},3)
+	},
+	gui: {
+		setSteps(value,update){
+			steps = Number(value)
+			window.input_times.max = steps
+			InputGestures.ranges.input_times.max = steps
+			if (times > steps) {Main.gui.setFactor(steps,false)}
+			window.input_steps.value = value
+			window.html_steps.textContent = value
+			window.html_steps_factors.textContent = Main.helper.getPrimes(steps)
+			Main.helper.setRatio()
+			if (update) {Main.redraw()}
+		},
+		setFactor(value,update){
+			times = Number(value)
+			window.input_times.value = value
+			window.html_times.textContent = value
+			window.html_times_factors.textContent = Main.helper.getPrimes(times)
+			Main.helper.setRatio()
+			if (update) {Main.redraw()}
+		},
+		setType(value){
+			addSum = value
+			if (value) {
+				type_addSum.checked = true
+			} else {
+				type_timesTable.checked = true
+			}
+		}
+	},
+	helper: {
+		getPrimes(n){
+			const primes = this.primeFactors(n)
+			return primes.length==1?'Prime':primes.join(' * ')
+		},
+		primeFactors(n) {
+			let factors = []
+			let i = 2
+			while (n >= 2*i && n != i) {
+				if (n%i==0) {
+					factors.push(i)
+					n = n/i
+					i = 2
+				} else {i++}
+			}
+			factors.push(n)
+			return factors
+		},
+		isEven(n) {return (n%2 == 0)},
+		isOdd(n) {return !this.isEven(n)},
+		setRatio() {window.ratio.textContent = 'Ratio: ' + (Math.floor(1000*(steps/times))/1000)},
+		randn_bm(min, max, skew) { // from StackOverflow
+			let u = 0, v = 0
+			while(u === 0) u = Math.random() // Converting [0,1) to (0,1)
+			while(v === 0) v = Math.random() // and [0,1]
+			let num = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v )
+			num = num / 10.0 + 0.5 // Translate to 0 -> 1
+			if (num > 1 || num < 0) num = this.randn_bm(min, max, skew) // resample between 0 and 1 if out of range
+			num = Math.pow(num, skew) // Skew
+			num *= max - min // Stretch to fill range
+			num += min // offset to min
+			return num
+		}
+	},
+	draw: {
+		circle(x,y,r,color,stroke) {
+			ctx.fillStyle = color
+			ctx.beginPath()
+			ctx.arc(x,y,r,0,Math.PI*2,true)
+			ctx.fill()
+			ctx.lineWidth = stroke
+			if (stroke != 0) {
+				ctx.stroke()
+			}
+			ctx.closePath()
+		},
+		line(x0,y0,x1,y1) {
+			ctx.beginPath()
+			ctx.moveTo(x0,y0)
+			ctx.lineTo(x1,y1)
+			ctx.strokeStyle = style.line
+			ctx.stroke()
+			ctx.closePath()
+		}
+	},
+}
+class InputGestures {
+	constructor(min,max,call) {
 	}
-	ctx.clearRect(0,0,size,size)
-}
-
-let i
-let lastIntervalId
-
-function redraw(zoom=1,x=0,y=0) {
-	if (delay) {
-		recalc(zoom,x,y)
-			i = steps-1
-			let id = setInterval(function() {
-				lastIntervalId = id
-				let thisStep = Number(type(i)[0])
-				let nextStep = Number(type(i)[1])
-				Draw.line(x_c[thisStep],y_c[thisStep],x_c[nextStep],y_c[nextStep])
-				i--
-				if (i < 0) {
-					clearInterval(id)
-					circles()
-				}
-			}, 10)
-	} else {
-		instant(zoom, x, y)
+	static ctrl = false
+	static touchActive = {}
+	static numberInputs = {}
+	static ranges = {
+		input_steps: {
+			min: 2,
+			max: 1000,
+			call: Main.gui.setSteps,
+		},
+		input_times: {
+			min: 2,
+			max: 1000,
+			call: Main.gui.setFactor,
+		}
+	}
+	static touchStart(e) {
+		const val = Number(e.target.value)
+		this.touchActive.startVal = val
+		this.touchActive.y = e.touches[0].clientY
+		this.touchActive.currentVal = val
+	}
+	static touchMove(e, input) {
+		e.preventDefault()
+		if (!this.touchActive.y) return
+		const newVal = this.touchActive.startVal + Math.round((this.touchActive.y - e.touches[0].clientY)/10)
+		e.target.value = Number(newVal)
+		if (newVal == this.touchActive.currentVal) return
+		this.touchActive.currentVal = newVal
+		InputGestures.numberInputs[input].call()
+	}
+	static touchEnd() {
+		this.touchActive = {}
+	}
+	static addEvents() {
+		Object.keys(this.numberInputs).forEach((input) => {
+			document.getElementById(input).addEventListener('wheel', e => {InputGestures.numberInput(e, input)})
+			document.getElementById(input).addEventListener('touchstart', e => {InputGestures.touchStart(e)})
+			document.getElementById(input).addEventListener('touchmove', e => {InputGestures.touchMove(e, input)})
+			document.getElementById(input).addEventListener('touchend', e => {InputGestures.touchEnd()})
+		})
+		Object.keys(this.ranges).forEach((input) => {
+			document.getElementById(input).addEventListener('wheel', e => {InputGestures.rangeInput(e, input)})
+		})
+		document.addEventListener('keydown', (event) => {if (event.ctrlKey) {InputGestures.ctrl = true}})
+		document.addEventListener('keyup', (event) => {if (!event.ctrlKey) {InputGestures.ctrl = false}})
+	}
+	static setLimits() {
+	}
+	static rangeInput(e, input) {
+		e.preventDefault()
+		const wheel = e.deltaY>0?this.ctrl?-10:-1:this.ctrl?10:1
+		const val = Number(e.target.value)+wheel
+		const {min, max, call} = InputGestures.ranges[input]
+		if (val < min || val == max+1) {return}
+		call(val,true)
+	}
+	static numberInput(e, input) {
+		e.preventDefault()
+		const wheel = e.deltaY>0?this.ctrl?-10:-1:this.ctrl?10:1
+		const val = Number(e.target.value)+wheel
+		e.target.value = val
+		const {min, max, call} = InputGestures.numberInputs[input]
+		if (val < min || val == max+1) {return}
+		call()
+	}
+	static update() {
+		Main.clear()
+		const n = Number(window.phi.value)
+		const m = Number(window.rho.value)
+		const layers = Number(window.layers.value)
+		const number = Number(window.number.value)
+		Main.swirls(n,m,layers,number)
 	}
 }
-
-function instant(zoom=1,x=0,y=0) {
-	clearInterval(lastIntervalId)
-	recalc(zoom,x,y)
-	for (let i=0;i<steps;i++) {
-		let thisStep = Number(type(i)[0])
-		let nextStep = Number(type(i)[1])
-		Draw.line(x_c[thisStep],y_c[thisStep],x_c[nextStep],y_c[nextStep])
-	}
-	circles()
-}
-function circles() {
-	for (let i=0;i<steps;i++) {
-		ctx.strokeStyle = style.dotStroke
-		Draw.circle(x_c[i],y_c[i],style.dotSize,style.dot,true)
-	}
-}
-function type(i) {
-	if (addSum) {return [i,Math.floor((i+times)%steps)%steps]}
-	return [i,Math.floor((i*times)%steps)]
-}
-// function vecLength(a,b,c,d) {
-// 	console.groupCollapsed('doh')
-// }
-// Vurderte ny funksjonalitet
-// function increment(inc) {
-// 	gui_change_steps(Number(steps+inc),false)
-// 	gui_change_times(times+(Math.abs(inc)/inc),true)
-// }
+InputGestures.addEvents()
 
 // evenOrOddSteps rewrite to modulo
 function makeRatio(ratio,delta,evenOrOddSteps) {
-	let seedSteps = Math.floor(randn_bm(1, 1000-delta, 3))
+	let seedSteps = Math.floor(Main.helper.randn_bm(1, 1000-delta, 3))
 	seedSteps = seedSteps + (ratio-((seedSteps-delta)%ratio)) // finne den steps som går opp i ratio
 	let seedTimes = (seedSteps-delta)/ratio
 	switch(evenOrOddSteps) {
@@ -452,7 +623,7 @@ function makeRatio(ratio,delta,evenOrOddSteps) {
 			}
 		break
 		case 'odd':
-			if (isEven(seedSteps)) {
+			if (Main.helper.isEven(seedSteps)) {
 				if (ratio == 1) seedSteps ++;seedTimes++
 			}
 		break
@@ -461,7 +632,7 @@ function makeRatio(ratio,delta,evenOrOddSteps) {
 			seedTimes = seedSteps - 3
 		break
 		case 'oddfactors':
-			if (isEven(seedTimes)) {seedTimes++;seedSteps=seedSteps+ratio}
+			if (Main.helper.isEven(seedTimes)) {seedTimes++;seedSteps=seedSteps+ratio}
 		break
 		case 'evenfactors':
 			if (isOdd(seedTimes)) {seedTimes++;seedSteps=seedSteps+ratio}
@@ -469,19 +640,19 @@ function makeRatio(ratio,delta,evenOrOddSteps) {
 		default:
 	}
 	console.log(seedSteps,seedTimes)
-	gui_change_steps(seedSteps, false)
-	gui_change_times(seedTimes, true)
+	Main.gui.setSteps(seedSteps, false)
+	Main.gui.setFactor(seedTimes, true)
 }
 function makeTimes(time,symmetrical,evenOrOddSteps) {
-	let seedSteps =  Math.floor(randn_bm(time+1, 1000-time, 3))
+	let seedSteps =  Math.floor(Main.helper.randn_bm(time+1, 1000-time, 3))
 	console.log(`random ${seedSteps}`)
 	if (symmetrical) {
 		let symmetry = time-1
 		seedSteps = seedSteps + (symmetry-(seedSteps%symmetry))
 		console.log(`adjusted symmetry ${seedSteps}`)
 		if (evenOrOddSteps == 'odd') {
-			if (isEven(seedSteps)) {
-				if (isEven(symmetry)) {console.log('impossible request')} else {seedSteps = seedSteps + symmetry}
+			if (Main.helper.isEven(seedSteps)) {
+				if (Main.helper.isEven(symmetry)) {console.log('impossible request')} else {seedSteps = seedSteps + symmetry}
 			}
 		}
 		if (evenOrOddSteps == 'even') {
@@ -491,176 +662,37 @@ function makeTimes(time,symmetrical,evenOrOddSteps) {
 		}
 	}
 	console.log(seedSteps,time,evenOrOddSteps)
-	gui_change_steps(seedSteps, false)
-	gui_change_times(time, true)
+	Main.gui.setSteps(seedSteps, false)
+	Main.gui.setFactor(time, true)
 }
-function setSpin(newSpin) {
-	const targetSpin = spin + newSpin
-	let animate = setInterval(function() {
-		spin = spin + Math.PI /240
-		instant()
-		if (spin > targetSpin) {
-			clearInterval(animate)
-			spin = targetSpin
-		}
-	},3)
-}
-function primeFactors(n) {
-	let factors = []
-	let i = 2
-	while (n >= 2*i && n != i) {
-		if (n%i==0) {
-			factors.push(i)
-			n = n/i
-			i = 2
-		} else {i++}
-	}
-	factors.push(n)
-	return factors
-}
-const Draw = {
-	circle(x,y,r,color,stroke) {
-		ctx.fillStyle = color
-		ctx.beginPath()
-		ctx.arc(x,y,r,0,Math.PI*2,true)
-		ctx.fill()
-		ctx.lineWidth = stroke
-		if (stroke != 0) {
-			ctx.stroke()
-		}
-		ctx.closePath()
-	},
-	line(x0,y0,x1,y1) {
-		ctx.beginPath()
-		ctx.moveTo(x0,y0)
-		ctx.lineTo(x1,y1)
-		ctx.strokeStyle = style.line
-		ctx.stroke()
-		ctx.closePath()
-	}
-}
-function isEven(n) {if (n%2 == 0) {return true} else return false}
-function isOdd(n) {return !isEven(n)}
-function setRatio() {window.ratio.textContent = 'Ratio: ' + (Math.floor(1000*(steps/times))/1000)}
-
-function randn_bm(min, max, skew) { // from StackOverflow
-	let u = 0, v = 0;
-	while(u === 0) u = Math.random(); // Converting [0,1) to (0,1)
-	while(v === 0) v = Math.random(); // and [0,1]
-	let num = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
-	num = num / 10.0 + 0.5; // Translate to 0 -> 1
-	if (num > 1 || num < 0) num = randn_bm(min, max, skew); // resample between 0 and 1 if out of range
-	num = Math.pow(num, skew); // Skew
-	num *= max - min; // Stretch to fill range
-	num += min; // offset to min
-	return num;
-}
-window.canvas.addEventListener('mouseout', function() {instant()})
-window.canvas.addEventListener('click', function() {style.zoom = 1;instant()})
-window.canvas.addEventListener('mousemove', function(e) {
-	x_m = 0.5-(e.clientX/size)
-	y_m = 0.5-(e.clientY/size)
-	instant(style.zoom,x_m,y_m)
-})
-window.canvas.addEventListener('wheel', function(e) {
-	e.preventDefault()
-	let change = 0.8
-	if (e.deltaY > 0) {style.zoom*=change} else {style.zoom*=(1/change)}
-	instant(style.zoom,x_m,y_m)
-	console.log('zoom = ' + style.zoom)
-})
-// window.input_steps.addEventListener('wheel', function(e) {
-// 	e.preventDefault()
-// 	const wheel = e.deltaY>0?-1:1
-// 	const val = Number(this.value)+wheel
-// 	if (val < 2 || val == 1000+1) {return}
-// 	gui_change_steps(val,true)
-// })
-// window.input_times.addEventListener('wheel', function(e) {
-// 	e.preventDefault()
-// 	const wheel = e.deltaY>0?-1:1
-// 	const val = Number(this.value)+wheel
-// 	if (val < 2 || val == steps+1) {return}
-// 	gui_change_times(val,true)
-// })
-
-class MouseInputs {
-	constructor(min,max,call) {
-	}
-	static numberInputs = {
-	}
-	static ranges = {
-		input_steps: {
-			min: 2,
-			max: 1000,
-			call: gui_change_steps,
-		},
-		input_times: {
-			min: 2,
-			max: 1000,
-			call: gui_change_times,
-		}
-	}
-	static addEvents() {
-		Object.keys(this.numberInputs).forEach((input) => {}
-		Object.keys(this.ranges).forEach((input) => {
-			document.getElementById(input).addEventListener('wheel', e => {MouseInputs.rangeInput(e, input)})
-		})
-	}
-	static rangeInput(e, input) {
-		e.preventDefault()
-		const wheel = e.deltaY>0?-1:1
-		const val = Number(e.target.value)+wheel
-		const {min, max, call} = MouseInputs.ranges[input]
-		if (val < min || val == max+1) {return}
-		call(val,true)
-	}
-	static numberInput(e) {}
-}
-MouseInputs.addEvents()
-
-// GUI
-function gui_change_steps(value,update){
-	steps = Number(value)
-	window.input_times.max = steps
-	MouseInputs.ranges.input_times.max = steps
-	if (times > steps) {gui_change_times(steps,false)}
-	window.input_steps.value = value
-	window.html_steps.textContent = value
-	window.html_steps_factors.textContent = getPrimes(steps)
-	setRatio()
-	if (update) {redraw()}
-}
-function gui_change_times(value,update){
-	times = Number(value)
-	window.input_times.value = value
-	window.html_times.textContent = value
-	window.html_times_factors.textContent = getPrimes(times)
-	setRatio()
-	if (update) {redraw()}
-}
-function getPrimes(n){
-	const primes = primeFactors(n)
-	return primes.length==1?'Prime':primes.join(' * ')
-}
-function gui_change_type(value){
-	addSum = value
-	if (value) {
-		type_addSum.checked = true
-	} else {
-		type_timesTable.checked = true
-	}
-}
-
 function setValues(steps,times,toggle=false) {
-	gui_change_steps(steps,false)
-	gui_change_times(times,false)
-	if (toggle) {gui_change_type(true)}
-	else {gui_change_type(false)}
-	redraw()
+	Main.gui.setSteps(steps,false)
+	Main.gui.setFactor(times,false)
+	if (toggle) {Main.gui.setType(true)}
+	else {Main.gui.setType(false)}
+	Main.redraw()
 	console.log(steps,times,toggle)
 }
 setValues(156,112)
+
+const Events = {
+	mouseMove(e) {
+		x_m = 0.5-(e.clientX/size)
+		y_m = 0.5-(e.clientY/size)
+		Main.instant(style.zoom,x_m,y_m)
+	},
+	wheel(e) {
+		e.preventDefault()
+		let change = 0.8
+		if (e.deltaY > 0) {style.zoom*=change} else {style.zoom*=(1/change)}
+		Main.instant(style.zoom,x_m,y_m)
+	}
+}
+window.canvas.addEventListener('mouseout', () => Main.instant)
+window.canvas.addEventListener('click', () => {style.zoom = 1;Main.instant()})
+window.canvas.addEventListener('mousemove', Events.mouseMove)
+window.canvas.addEventListener('wheel', Events.wheel)
+
 </script>
 </body>
 </html>
