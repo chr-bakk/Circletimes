@@ -595,9 +595,9 @@ class InputGestures {
 		e.preventDefault()
 		const wheel = e.deltaY>0?this.ctrl?-10:-1:this.ctrl?10:1
 		const val = Number(e.target.value)+wheel
-		e.target.value = val
 		const {min, max, call} = InputGestures.numberInputs[input]
 		if (val < min || val == max+1) {return}
+		e.target.value = val
 		call()
 	}
 	static update() {
